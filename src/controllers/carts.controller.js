@@ -43,11 +43,33 @@ export const cartsController = {
     try {
       const cartId = req.params.cid
       let cartFound = await cartDB.getById(cartId)
-      
+      const productFound  = await productDB.getAll()
+
+
+
       if (!cartFound) {
-        res.status(422).json({ description: 'Cart not found.' })
-      } else {
-        res.status(200).json({description:`Cart found, content ${cartFound.products.length} products.`,data:cartFound.products})
+        return res.status(422).json({ description: 'Cart not found.' })
+      } else if (!cartFound.products ) {
+        return res.status(200).json({description:`Cart found, content 0 products.`,data:[]})
+      }
+      else {
+        cartFound.products = cartFound.products.map( item => {
+          let productItem = productFound.find( product => product.id === item.id )
+          const editproductItem = {
+            id:  productItem.id,
+            timestamp:productItem.timestamp,
+            name: productItem.name ? productItem.name : 'No name',
+            description: productItem.description ? productItem.description : 'No description',
+            code: productItem.code ? productItem.code : 'No code',
+            thumbnail: productItem.thumbnail ? productItem.thumbnail : 'no Image',
+            price: productItem.price ? parseInt( productItem.price ) : 0,
+            stock: productItem.stock ? parseInt( productItem.stock ) : 0
+          }
+
+          return productItem ? {...editproductItem, quantity: item.quantity} : item
+
+    })
+        return res.status(200).json({description:`Cart found, content ${cartFound.products.length} products.`,data:cartFound.products})
       }
     } catch (error) {
         console.warn({class:`cartsController`,method:`getAllProductListToByCartId: async (req, res)`,description: error})
